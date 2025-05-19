@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Style Transfer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+        .image-preview {
+            max-height: 200px;
+            max-width: 100%;
+            margin-top: 10px;
+            display: none;
+        }
+        .parameter-controls {
+            margin-top: 20px;
+        }
+        .previous-transfers {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .example-card {
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        .example-card:hover {
+            transform: scale(1.03);
+        }
+        .example-image {
+            height: 150px;
+            object-fit: cover;
+        }
+        .card-img-overlay {
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .example-card:hover .card-img-overlay {
+            opacity: 1;
+        }
+        .example-header {
+            position: relative;
+            overflow: hidden;
+        }
+        .example-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        .example-card:hover .example-overlay {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-center mb-4">
+                <h1>Neural Style Transfer</h1>
+                <p class="lead">Transform your photos with the style of famous artworks</p>
+            </div>
+        </div>
+        
+        <form action="/transfer" method="post" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            Content Image
+                        </div>
+                        <div class="card-body">
+                            <p>This is the image you want to transform</p>
+                            <input type="file" name="content_image" id="content_image" class="form-control" accept="image/*" required>
+                            <img id="content_preview" class="image-preview" src="#" alt="Content preview">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            Style Image
+                        </div>
+                        <div class="card-body">
+                            <p>This image provides the artistic style</p>
+                            <input type="file" name="style_image" id="style_image" class="form-control" accept="image/*" required>
+                            <img id="style_preview" class="image-preview" src="#" alt="Style preview">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row parameter-controls">
+                <div class="col-md-4">
+                    <label for="steps" class="form-label">Optimization Steps</label>
+                    <input type="range" class="form-range" min="500" max="5000" step="500" id="steps" name="steps" value="2000">
+                    <div class="text-center"><span id="steps_value">2000</span></div>
+                </div>
+                <div class="col-md-4">
+                    <label for="alpha" class="form-label">Content Weight (α)</label>
+                    <input type="range" class="form-range" min="0.1" max="10" step="0.1" id="alpha" name="alpha" value="1">
+                    <div class="text-center"><span id="alpha_value">1.0</span></div>
+                </div>
+                <div class="col-md-4">
+                    <label for="beta" class="form-label">Style Weight (β)</label>
+                    <input type="range" class="form-range" min="0.001" max="0.1" step="0.001" id="beta" name="beta" value="0.01">
+                    <div class="text-center"><span id="beta_value">0.01</span></div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-12 text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">Transfer Style</button>
+                    <p class="mt-2 text-muted">This may take a few minutes depending on your settings</p>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Previous Style Transfers Section -->
+        {% if recent_transfers %}
+        <div class="row previous-transfers">
+            <div class="col-md-12">
+                <h2 class="text-center mb-4">Previous Style Transfers</h2>
+                <div class="row">
+                    {% for transfer in recent_transfers %}
+                    <div class="col-md-4">
+                        <div class="card example-card">
+                            <div class="card-body p-0">
+                                <div class="row g-0">
+                                    <div class="col-4">
+                                        <div class="example-header">
+                                            <img src="/{{ transfer.content_image }}" class="example-image" alt="Content">
+                                            <div class="example-overlay">Content</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="example-header">
+                                            <img src="/{{ transfer.style_image }}" class="example-image" alt="Style">
+                                            <div class="example-overlay">Style</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="example-header">
+                                            <img src="/{{ transfer.result_image }}" class="example-image" alt="Result">
+                                            <div class="example-overlay">Result</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-2 mb-2">
+                                    <a href="/result/{{ transfer.id }}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        // Preview uploaded images
+        document.getElementById('content_image').addEventListener('change', function(e) {
+            const preview = document.getElementById('content_preview');
+            preview.src = URL.createObjectURL(e.target.files[0]);
+            preview.style.display = 'block';
+        });
+        
+        document.getElementById('style_image').addEventListener('change', function(e) {
+            const preview = document.getElementById('style_preview');
+            preview.src = URL.createObjectURL(e.target.files[0]);
+            preview.style.display = 'block';
+        });
+        
+        // Display slider values
+        document.getElementById('steps').addEventListener('input', function(e) {
+            document.getElementById('steps_value').textContent = e.target.value;
+        });
+        
+        document.getElementById('alpha').addEventListener('input', function(e) {
+            document.getElementById('alpha_value').textContent = e.target.value;
+        });
+        
+        document.getElementById('beta').addEventListener('input', function(e) {
+            document.getElementById('beta_value').textContent = e.target.value;
+        });
+    </script>
+</body>
+</html>
